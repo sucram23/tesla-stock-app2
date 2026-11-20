@@ -1,14 +1,16 @@
+import streamlit as st
 import yfinance as tck
 
-# 1. Choose your favorite company (Tesla!)
+st.title("Tesla (TSLA) Stock Tracker")
+
+# 1. Get Tesla stock data
 tesla_stock = tck.Ticker("TSLA")
+todays_data = tesla_stock.history(period="5d")
 
-# 2. Get today's live pricing information
-todays_data = tesla_stock.history(period="1d")
+# 2. Pull out the latest closing price
+price = todays_data['Close'].iloc[-1]
 
-# 3. Pull out the exact closing price (add [0] after iloc!)
-price = todays_data['Close'].iloc[0]
-
-# 4. Print it out like magic!
-print(f"The current Tesla stock price is: ${price:.2f}")
-
+# 3. Display the price and table on the webpage
+st.metric(label="Current Tesla Stock Price", value=f"${price:,.2f}")
+st.subheader("Last 5 Days Price History")
+st.dataframe(todays_data[["Open", "High", "Low", "Close", "Volume"]])
