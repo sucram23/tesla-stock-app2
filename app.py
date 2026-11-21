@@ -36,7 +36,7 @@ with st.container(border=True):
 st.divider()
 
 # --- STOCK SEARCH & TIMEFRAME SELECTOR ---
-col1, col2 = st.columns()
+col1, col2 = st.columns(2)
 
 with col1:
     ticker_symbol = st.text_input("Enter a Stock Ticker (e.g., TSLA, AAPL, MSFT):", value="TSLA").upper().strip()
