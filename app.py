@@ -5,14 +5,12 @@ import yfinance as tck
 st.set_page_config(page_title="Live Stock Price & Portfolio Tracker", layout="wide")
 st.title("Live Stock Price & Portfolio Tracker")
 
-# Initialize portfolio storage in session state
 if "portfolio" not in st.session_state:
     st.session_state.portfolio = [
         {"Ticker": "TSLA", "Shares": 10.0, "Buy Price": 250.00},
         {"Ticker": "AAPL", "Shares": 5.0, "Buy Price": 180.00}
     ]
 
-# Helper function to render Yahoo-style market cards with sparklines
 def render_market_cards(ticker_dict):
     cols = st.columns(len(ticker_dict))
     for col, (name, symbol) in zip(cols, ticker_dict.items()):
@@ -59,7 +57,7 @@ with m_tab2:
 
 st.divider()
 
-# --- MAIN NAVIGATION TABS: STOCK RESEARCH VS. MY PORTFOLIO ---
+# --- MAIN NAVIGATION TABS ---
 main_tab1, main_tab2 = st.tabs(["📈 Stock Research & Forecast", "💼 My Portfolio"])
 
 # ==========================================
@@ -212,7 +210,6 @@ with main_tab1:
 with main_tab2:
     st.subheader("Add a Stock to Your Portfolio")
     with st.form("add_stock_form", clear_on_submit=True):
-        # vertical_alignment="bottom" aligns the Add Stock button flush with the text/number boxes
         p_col1, p_col2, p_col3, p_col4 = st.columns([2, 1.5, 1.5, 1], vertical_alignment="bottom")
         new_ticker = p_col1.text_input("Ticker Symbol (e.g., NVDA)").upper().strip()
         new_shares = p_col2.number_input("Number of Shares", min_value=0.01, value=1.0, step=1.0)
@@ -221,4 +218,7 @@ with main_tab2:
 
         if submitted:
             if new_ticker:
-                st.session_state.portfolio.append({
+                new_entry = {"Ticker": new_ticker, "Shares": float(new_shares), "Buy Price": float(new_buy_price)}
+                st.session_state.portfolio.append(new_entry)
+                st.rerun()
+            else:
