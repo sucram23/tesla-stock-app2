@@ -104,7 +104,7 @@ with main_tab1:
 
         if not history_data.empty:
             price = history_data["Close"].iloc[-1]
-            first_price = history_data["Close"].iloc
+            first_price = history_data["Close"].iloc[0]
             period_change = price - first_price
             period_pct = (period_change / first_price) * 100
 
