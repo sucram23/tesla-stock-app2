@@ -104,7 +104,7 @@ with main_tab1:
 
         if not history_data.empty:
             price = history_data["Close"].iloc[-1]
-            first_price = history_data["Close"].iloc[0]
+            first_price = history_data["Close"].iloc
             period_change = price - first_price
             period_pct = (period_change / first_price) * 100
 
@@ -169,7 +169,6 @@ with main_tab1:
                 else:
                     st.info(f"No recent Yahoo Finance news articles found for {ticker_symbol}.")
 
-            # Wall Street Analyst Forecast
             st.subheader(f"Wall Street Forecast & 12-Month Price Targets ({ticker_symbol})")
             with st.container(border=True):
                 target_low = info.get("targetLowPrice")
@@ -198,7 +197,6 @@ with main_tab1:
                 else:
                     st.info(f"Wall Street analyst price targets are not available for {ticker_symbol}.")
 
-            # Full-width Price History Table
             st.subheader(f"{ticker_symbol} - {timeframe} Price History")
             st.dataframe(history_data[["Open", "High", "Low", "Close", "Volume"]].iloc[::-1], use_container_width=True)
         else:
@@ -216,9 +214,15 @@ with main_tab2:
         new_buy_price = p_col3.number_input("Average Buy Price ($)", min_value=0.01, value=100.0, step=1.0)
         submitted = p_col4.form_submit_button("Add Stock", use_container_width=True)
 
-        if submitted:
-            if new_ticker:
-                new_entry = {"Ticker": new_ticker, "Shares": float(new_shares), "Buy Price": float(new_buy_price)}
-                st.session_state.portfolio.append(new_entry)
-                st.rerun()
-            else:
+        if submitted and new_ticker:
+            st.session_state.portfolio.append({"Ticker": new_ticker, "Shares": float(new_shares), "Buy Price": float(new_buy_price)})
+            st.rerun()
+
+    if not st.session_state.portfolio:
+        st.info("Your portfolio is empty. Use the form above to add your first stock!")
+
+    if st.session_state.portfolio:
+        portfolio_rows = []
+        total_cost = 0.0
+        total_value = 0.0
+
