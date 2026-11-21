@@ -35,8 +35,8 @@ with st.container(border=True):
 
 st.divider()
 
-# --- STOCK SEARCH & TIMEFRAME SELECTOR ---
-col1, col2 = st.columns(2)
+# --- STOCK SEARCH, TIMEFRAME & INDICATOR SELECTOR ---
+col1, col2, col3 = st.columns(3)
 
 with col1:
     ticker_symbol = st.text_input("Enter a Stock Ticker (e.g., TSLA, AAPL, MSFT):", value="TSLA").upper().strip()
@@ -45,7 +45,14 @@ with col2:
     timeframe = st.selectbox(
         "Select Date Range:",
         options=["1 Day", "5 Days", "1 Month", "6 Months", "1 Year", "5 Years", "Max"],
-        index=2  # Defaults to "1 Month"
+        index=4  # Defaults to "1 Year" so moving averages have plenty of data
+    )
+
+with col3:
+    selected_indicators = st.multiselect(
+        "Chart Indicators:",
+        options=["20-Period SMA", "50-Period SMA", "20-Period EMA", "Bollinger Bands"],
+        default=["20-Period SMA"]
     )
 
 period_map = {
@@ -72,8 +79,26 @@ if ticker_symbol:
         price = history_data["Close"].iloc[-1]
         st.metric(label=f"Current {ticker_symbol} Stock Price", value=f"${price:,.2f}")
 
+        # Build a separate table just for the chart lines
+        chart_df = history_data[["Close"]].copy()
+
+        if "20-Period SMA" in selected_indicators:
+            chart_df["SMA 20"] = history_data["Close"].rolling(window=20).mean()
+
+        if "50-Period SMA" in selected_indicators:
+            chart_df["SMA 50"] = history_data["Close"].rolling(window=50).mean()
+
+        if "20-Period EMA" in selected_indicators:
+            chart_df["EMA 20"] = history_data["Close"].ewm(span=20, adjust=False).mean()
+
+        if "Bollinger Bands" in selected_indicators:
+            sma20 = history_data["Close"].rolling(window=20).mean()
+            std20 = history_data["Close"].rolling(window=20).std()
+            chart_df["Upper Band"] = sma20 + (std20 * 2)
+            chart_df["Lower Band"] = sma20 - (std20 * 2)
+
         st.subheader(f"{ticker_symbol} - {timeframe} Price Chart")
-        st.line_chart(history_data["Close"])
+        st.line_chart(chart_df)
 
         st.subheader(f"{ticker_symbol} - {timeframe} Price History")
         st.dataframe(history_data[["Open", "High", "Low", "Close", "Volume"]].iloc[::-1], use_container_width=True)
