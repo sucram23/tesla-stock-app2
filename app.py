@@ -1,9 +1,16 @@
 import streamlit as st
-import yfinance as tck
 import pandas as pd
+import yfinance as tck
 
-st.set_page_config(page_title="Live Stock & Portfolio Tracker", layout="wide")
-st.title("Live Stock & Portfolio Tracker")
+st.set_page_config(page_title="Live Stock Price & Portfolio Tracker", layout="wide")
+st.title("Live Stock Price & Portfolio Tracker")
+
+# Initialize portfolio storage in session state
+if "portfolio" not in st.session_state:
+    st.session_state.portfolio = [
+        {"Ticker": "TSLA", "Shares": 10.0, "Buy Price": 250.00},
+        {"Ticker": "AAPL", "Shares": 5.0, "Buy Price": 180.00}
+    ]
 
 # Helper function to render Yahoo-style market cards with sparklines
 def render_market_cards(ticker_dict):
@@ -52,13 +59,13 @@ with m_tab2:
 
 st.divider()
 
-# --- MAIN APP NAVIGATION TABS ---
-page_tracker, page_portfolio = st.tabs(["📈 Stock Research & Forecast", "💼 My Portfolio"])
+# --- MAIN NAVIGATION TABS: STOCK RESEARCH VS. MY PORTFOLIO ---
+main_tab1, main_tab2 = st.tabs(["📈 Stock Research & Forecast", "💼 My Portfolio"])
 
 # ==========================================
 # TAB 1: STOCK RESEARCH, CHART, NEWS & FORECAST
 # ==========================================
-with page_tracker:
+with main_tab1:
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -109,6 +116,7 @@ with page_tracker:
                 delta=f"{period_change:+,.2f} ({period_pct:+.2f}%)"
             )
 
+            # 50/50 Split: Left = Price Chart, Right = Company News
             chart_col, news_col = st.columns(2)
 
             with chart_col:
@@ -164,6 +172,7 @@ with page_tracker:
                 else:
                     st.info(f"No recent Yahoo Finance news articles found for {ticker_symbol}.")
 
+            # Wall Street Analyst Forecast
             st.subheader(f"Wall Street Forecast & 12-Month Price Targets ({ticker_symbol})")
             with st.container(border=True):
                 target_low = info.get("targetLowPrice")
@@ -174,6 +183,7 @@ with page_tracker:
 
                 if target_mean:
                     f_col1, f_col2, f_col3, f_col4 = st.columns(4)
+
                     rating_label = rec_key.replace("_", " ").upper() if isinstance(rec_key, str) else "N/A"
                     analyst_note = f"Based on {num_analysts} analysts" if num_analysts else "Analyst consensus"
                     f_col1.metric(label="Analyst Rating", value=rating_label, delta=analyst_note, delta_color="off")
@@ -191,32 +201,25 @@ with page_tracker:
                 else:
                     st.info(f"Wall Street analyst price targets are not available for {ticker_symbol}.")
 
+            # Full-width Price History Table
             st.subheader(f"{ticker_symbol} - {timeframe} Price History")
             st.dataframe(history_data[["Open", "High", "Low", "Close", "Volume"]].iloc[::-1], use_container_width=True)
         else:
             st.error(f"Could not find stock data for '{ticker_symbol}'. Double-check the ticker symbol and try again.")
 
 # ==========================================
-# TAB 2: INTERACTIVE PORTFOLIO TRACKER
+# TAB 2: MY PORTFOLIO BUILDER & TRACKER
 # ==========================================
-with page_portfolio:
-    st.subheader("Portfolio Holdings & Live Valuation")
-    st.caption("Edit shares or purchase prices directly in the table below, or add new rows at the bottom.")
+with main_tab2:
+    st.subheader("Add a Stock to Your Portfolio")
+    with st.form("add_stock_form", clear_on_submit=True):
+        p_col1, p_col2, p_col3, p_col4 = st.columns([2, 2, 2, 1])
+        new_ticker = p_col1.text_input("Ticker Symbol (e.g., NVDA)").upper().strip()
+        new_shares = p_col2.number_input("Number of Shares", min_value=0.01, value=1.0, step=1.0)
+        new_buy_price = p_col3.number_input("Average Buy Price ($)", min_value=0.01, value=100.0, step=1.0)
+        submitted = p_col4.form_submit_button("Add Stock")
 
-    # Initialize default sample holdings in session state
-    if "portfolio_df" not in st.session_state:
-        st.session_state.portfolio_df = pd.DataFrame([
-            {"Ticker": "TSLA", "Shares": 10.0, "Buy Price ($)": 250.00},
-            {"Ticker": "AAPL", "Shares": 15.0, "Buy Price ($)": 185.00},
-            {"Ticker": "NVDA", "Shares": 20.0, "Buy Price ($)": 110.00},
-            {"Ticker": "SPY",  "Shares": 5.0,  "Buy Price ($)": 500.00}
-        ])
-
-    # Editable holdings table (users can add/delete rows or edit numbers)
-    edited_df = st.data_editor(
-        st.session_state.portfolio_df,
-        num_rows="dynamic",
-        use_container_width=True,
-        column_config={
-            "Ticker": st.column_config.TextColumn("Ticker", required=True),
-            "Shares": st.column_config.NumberColumn("Shares", min_value=0.0, step=1.0, format="%.2f"),
+        if submitted and new_ticker:
+            st.session_state.portfolio.append({
+                "Ticker": new_ticker,
+                "Shares": new_shares,
