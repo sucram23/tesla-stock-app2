@@ -212,15 +212,13 @@ with main_tab1:
 with main_tab2:
     st.subheader("Add a Stock to Your Portfolio")
     with st.form("add_stock_form", clear_on_submit=True):
-        p_col1, p_col2, p_col3, p_col4 = st.columns([2, 2, 2, 1])
+        # vertical_alignment="bottom" aligns the Add Stock button flush with the text/number boxes
+        p_col1, p_col2, p_col3, p_col4 = st.columns([2, 1.5, 1.5, 1], vertical_alignment="bottom")
         new_ticker = p_col1.text_input("Ticker Symbol (e.g., NVDA)").upper().strip()
         new_shares = p_col2.number_input("Number of Shares", min_value=0.01, value=1.0, step=1.0)
         new_buy_price = p_col3.number_input("Average Buy Price ($)", min_value=0.01, value=100.0, step=1.0)
-        submitted = p_col4.form_submit_button("Add Stock")
+        submitted = p_col4.form_submit_button("Add Stock", use_container_width=True)
 
-        if submitted and new_ticker:
-            st.session_state.portfolio.append({
-                "Ticker": new_ticker,
-                "Shares": new_shares,
-                "Buy Price": new_buy_price
-            })
+        if submitted:
+            if new_ticker:
+                st.session_state.portfolio.append({
