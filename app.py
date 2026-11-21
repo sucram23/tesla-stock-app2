@@ -4,34 +4,50 @@ import yfinance as tck
 st.set_page_config(page_title="Live Stock Price Tracker", layout="wide")
 st.title("Live Stock Price Tracker")
 
-# --- TOP MARKET INDICATORS KEYCARD ---
-with st.container(border=True):
-    st.subheader("Market Overview")
-    indices = {
+# Helper function to render Yahoo-style market cards with sparklines
+def render_market_cards(ticker_dict):
+    cols = st.columns(len(ticker_dict))
+    for col, (name, symbol) in zip(cols, ticker_dict.items()):
+        hist = tck.Ticker(symbol).history(period="5d").dropna(subset=["Close"])
+        with col:
+            with st.container(border=True):
+                if len(hist) >= 2:
+                    latest = hist["Close"].iloc[-1]
+                    prev = hist["Close"].iloc[-2]
+                    change = latest - prev
+                    pct_change = (change / prev) * 100
+                    st.metric(
+                        label=f"{name} ({symbol})",
+                        value=f"{latest:,.2f}",
+                        delta=f"{change:+,.2f} ({pct_change:+.2f}%)",
+                        chart_data=hist["Close"].tolist(),
+                        chart_type="line"
+                    )
+                elif len(hist) == 1:
+                    st.metric(label=f"{name} ({symbol})", value=f"{hist['Close'].iloc[-1]:,.2f}")
+                else:
+                    st.metric(label=name, value="N/A")
+
+# --- YAHOO FINANCE TOP MARKET SUMMARY BAR ---
+tab1, tab2 = st.tabs(["🇺🇸 US Markets", "🛢️ Commodities, Bonds & Crypto"])
+
+with tab1:
+    render_market_cards({
         "S&P 500": "^GSPC",
-        "Dow Jones": "^DJI",
+        "Dow 30": "^DJI",
         "Nasdaq": "^IXIC",
-        "Russell 2000": "^RUT"
-    }
+        "Russell 2000": "^RUT",
+        "VIX": "^VIX"
+    })
 
-    idx_cols = st.columns(len(indices))
-
-    for col, (name, symbol) in zip(idx_cols, indices.items()):
-        idx_hist = tck.Ticker(symbol).history(period="5d").dropna(subset=["Close"])
-        if len(idx_hist) >= 2:
-            latest = idx_hist["Close"].iloc[-1]
-            prev = idx_hist["Close"].iloc[-2]
-            change = latest - prev
-            pct_change = (change / prev) * 100
-            col.metric(
-                label=name,
-                value=f"{latest:,.2f}",
-                delta=f"{change:+,.2f} ({pct_change:+.2f}%)"
-            )
-        elif len(idx_hist) == 1:
-            col.metric(label=name, value=f"{idx_hist['Close'].iloc[-1]:,.2f}")
-        else:
-            col.metric(label=name, value="N/A")
+with tab2:
+    render_market_cards({
+        "Crude Oil": "CL=F",
+        "Gold": "GC=F",
+        "10-Yr Bond": "^TNX",
+        "Bitcoin USD": "BTC-USD",
+        "US Dollar": "DX-Y.NYB"
+    })
 
 st.divider()
 
@@ -45,7 +61,7 @@ with col2:
     timeframe = st.selectbox(
         "Select Date Range:",
         options=["1 Day", "5 Days", "1 Month", "6 Months", "1 Year", "5 Years", "Max"],
-        index=4  # Defaults to "1 Year" so moving averages have plenty of data
+        index=4
     )
 
 with col3:
@@ -79,7 +95,6 @@ if ticker_symbol:
         price = history_data["Close"].iloc[-1]
         st.metric(label=f"Current {ticker_symbol} Stock Price", value=f"${price:,.2f}")
 
-        # Build a separate table just for the chart lines
         chart_df = history_data[["Close"]].copy()
 
         if "20-Period SMA" in selected_indicators:
