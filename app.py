@@ -116,7 +116,6 @@ with main_tab1:
                 delta=f"{period_change:+,.2f} ({period_pct:+.2f}%)"
             )
 
-            # 50/50 Split: Left = Price Chart, Right = Company News
             chart_col, news_col = st.columns(2)
 
             with chart_col:
@@ -223,3 +222,5 @@ with main_tab2:
             st.session_state.portfolio.append({
                 "Ticker": new_ticker,
                 "Shares": new_shares,
+                "Buy Price": new_buy_price
+            })
