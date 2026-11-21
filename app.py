@@ -86,7 +86,7 @@ selected_period, selected_interval = period_map[timeframe]
 if st.button("Refresh Price"):
     st.rerun()
 
-# --- SELECTED STOCK DATA, SPLIT CHART & NEWS, AND TABLE ---
+# --- SELECTED STOCK DATA, SPLIT CHART & NEWS, FORECAST, AND TABLE ---
 if ticker_symbol:
     stock = tck.Ticker(ticker_symbol)
     history_data = stock.history(period=selected_period, interval=selected_interval).dropna(subset=["Close"])
@@ -103,7 +103,7 @@ if ticker_symbol:
             delta=f"{period_change:+,.2f} ({period_pct:+.2f}%)"
         )
 
-        # Split the screen 50/50: Left = Price Chart, Right = Company News & Catalysts
+        # 50/50 Split: Left = Price Chart, Right = Company News
         chart_col, news_col = st.columns(2)
 
         with chart_col:
@@ -130,7 +130,6 @@ if ticker_symbol:
         with news_col:
             st.subheader(f"Why {ticker_symbol} Is Moving & Latest News")
 
-            # Expandable Company Profile ("What is going on with the company")
             info = stock.info
             company_name = info.get("longName", ticker_symbol)
             sector = info.get("sector", "N/A")
@@ -138,12 +137,10 @@ if ticker_symbol:
             with st.expander(f"About {company_name} ({sector})", expanded=False):
                 st.write(summary)
 
-            # Scrollable Yahoo Finance News Feed
             news_items = stock.news
             if news_items:
                 with st.container(height=390, border=True):
                     for item in news_items[:8]:
-                        # Handle both newer and older yfinance news dictionary structures
                         content = item.get("content", item)
                         title = content.get("title", "Headline unavailable")
                         summary_text = content.get("summary", "")
@@ -162,7 +159,40 @@ if ticker_symbol:
             else:
                 st.info(f"No recent Yahoo Finance news articles found for {ticker_symbol}.")
 
-        # Full-width Price History Table below the split section
+        # --- WALL STREET ANALYST FORECAST & PRICE TARGETS ---
+        st.subheader(f"Wall Street Forecast & 12-Month Price Targets ({ticker_symbol})")
+        with st.container(border=True):
+            target_low = info.get("targetLowPrice")
+            target_mean = info.get("targetMeanPrice")
+            target_high = info.get("targetHighPrice")
+            rec_key = info.get("recommendationKey", "N/A")
+            num_analysts = info.get("numberOfAnalystOpinions")
+
+            if target_mean:
+                f_col1, f_col2, f_col3, f_col4 = st.columns(4)
+
+                # Consensus Rating
+                rating_label = rec_key.replace("_", " ").upper() if isinstance(rec_key, str) else "N/A"
+                analyst_note = f"Based on {num_analysts} analysts" if num_analysts else "Analyst consensus"
+                f_col1.metric(label="Analyst Rating", value=rating_label, delta=analyst_note, delta_color="off")
+
+                # Low Target
+                low_pct = ((target_low - price) / price) * 100
+                f_col2.metric(label="Low Target (12M)", value=f"${target_low:,.2f}", delta=f"{low_pct:+.2f}% vs. current")
+
+                # Average Target
+                mean_pct = ((target_mean - price) / price) * 100
+                f_col3.metric(label="Average Target (12M)", value=f"${target_mean:,.2f}", delta=f"{mean_pct:+.2f}% vs. current")
+
+                # High Target
+                high_pct = ((target_high - price) / price) * 100
+                f_col4.metric(label="High Target (12M)", value=f"${target_high:,.2f}", delta=f"{high_pct:+.2f}% vs. current")
+
+                st.caption("Disclaimer: Wall Street analyst price targets and ratings are third-party estimates from Yahoo Finance and are for informational purposes only, not financial advice.")
+            else:
+                st.info(f"Wall Street analyst price targets are not available for {ticker_symbol} (common for ETFs, indices, or cryptocurrencies).")
+
+        # --- FULL-WIDTH PRICE HISTORY TABLE ---
         st.subheader(f"{ticker_symbol} - {timeframe} Price History")
         st.dataframe(history_data[["Open", "High", "Low", "Close", "Volume"]].iloc[::-1], use_container_width=True)
     else:
