@@ -108,7 +108,7 @@ if ticker_symbol:
     if not history_data.empty:
         close_list = history_data["Close"].tolist()
         price = float(close_list[-1])
-        first_price = float(close_list)
+        first_price = float(next(iter(close_list)))
         period_change = price - first_price
         period_pct = (period_change / first_price) * 100
 
@@ -226,4 +226,3 @@ st.subheader("Add a New Stock")
 c1, c2, c3, c4 = st.columns(4)
 new_sym = c1.text_input("Stock Ticker (e.g., NVDA)", key="add_ticker_box").upper().strip()
 new_sh = c2.number_input("Quantity (Shares)", min_value=0.01, value=1.0, step=1.0, key="add_shares_box")
-new_bp = c3.number_input("Price ($)", min_value=0.01, value=100.0, step=1.0, key="add_price_box")
