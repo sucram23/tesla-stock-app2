@@ -1,10 +1,11 @@
+import hmac
 import streamlit as st
 import pandas as pd
 import yfinance as tck
 
 st.set_page_config(page_title="Stock & Portfolio Tracker", layout="wide")
-import hmac
 
+# --- PASSWORD GATE ---
 def check_password():
     if st.session_state.get("password_correct", False):
         return True
@@ -13,17 +14,22 @@ def check_password():
     pwd = st.text_input("Enter Password to View App:", type="password")
 
     if st.button("Unlock App", type="primary"):
-        if hmac.compare_digest(pwd, st.secrets["APP_PASSWORD"]):
+        if "APP_PASSWORD" in st.secrets and hmac.compare_digest(pwd, st.secrets["APP_PASSWORD"]):
             st.session_state["password_correct"] = True
             st.rerun()
         else:
-            st.error("Incorrect password. Please try again.")
+            st.error("Incorrect password (or APP_PASSWORD not set in Streamlit Secrets).")
     return False
 
 if not check_password():
     st.stop()
 
-st.title("Live Stock Price & Portfolio Tracker")
+# Top header with Lock App button
+head_col1, head_col2 = st.columns([6, 1], vertical_alignment="center")
+head_col1.title("Live Stock Price & Portfolio Tracker")
+if head_col2.button("🔒 Lock App", use_container_width=True):
+    st.session_state["password_correct"] = False
+    st.rerun()
 
 if "holdings" not in st.session_state:
     st.session_state.holdings = [
@@ -181,7 +187,7 @@ if ticker_symbol:
 
 st.divider()
 
-# --- 3. MY PORTFOLIO SECTION (ALWAYS VISIBLE BELOW STOCKS) ---
+# --- 3. MY PORTFOLIO SECTION ---
 st.header("My Portfolio")
 
 rows = []
@@ -219,19 +225,4 @@ with st.container(border=True):
     k3.metric("Total Profit / Loss", f"${total_value - total_cost:+,.2f}")
 
 # Add Stock Controls
-c1, c2, c3, c4 = st.columns(4, vertical_alignment="bottom")
-new_sym = c1.text_input("Add Ticker (e.g., NVDA)").upper().strip()
-new_sh = c2.number_input("Shares", min_value=0.01, value=1.0)
-new_bp = c3.number_input("Buy Price ($)", min_value=0.01, value=100.0)
-if c4.button("Add Stock", use_container_width=True):
-    if new_sym:
-        st.session_state.holdings.append({"Ticker": new_sym, "Shares": new_sh, "Buy Price": new_bp})
-        st.rerun()
-
-# Portfolio Table + Total Estimated Value Directly Below
-if rows:
-    df = pd.DataFrame(rows)
-    st.dataframe(df, use_container_width=True, hide_index=True)
-    st.success(f"Total Estimated Portfolio Value: ${total_value:,.2f} (Invested: ${total_cost:,.2f} | Profit/Loss: ${total_value - total_cost:+,.2f})")
-
-    rem_col1, rem_col2 = st.columns(2, vertical_alignment="bottom")
+st.subheader("Add a New Stock")
