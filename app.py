@@ -15,8 +15,9 @@ def get_live_price(symbol, fallback=0.0):
     try:
         hist = tck.Ticker(symbol).history(period="5d").dropna(subset=["Close"])
         if not hist.empty:
-            latest = float(hist["Close"].iloc[-1])
-            prev = float(hist["Close"].iloc[-2]) if len(hist) >= 2 else latest
+            closes = hist["Close"].tolist()
+            latest = float(closes[-1])
+            prev = float(closes[-2]) if len(closes) >= 2 else latest
             return latest, prev
     except Exception:
         pass
@@ -79,8 +80,9 @@ if ticker_symbol:
     history_data = stock.history(period=selected_period, interval=selected_interval).dropna(subset=["Close"])
 
     if not history_data.empty:
-        price = float(history_data["Close"].iloc[-1])
-        first_price = float(history_data["Close"].iloc)
+        close_list = history_data["Close"].tolist()
+        price = float(close_list[-1])
+        first_price = float(close_list[-len(close_list)])
         period_change = price - first_price
         period_pct = (period_change / first_price) * 100
 
@@ -213,4 +215,3 @@ if rows:
     st.success(f"Total Estimated Portfolio Value: ${total_value:,.2f} (Invested: ${total_cost:,.2f} | Profit/Loss: ${total_value - total_cost:+,.2f})")
 
     rem_col1, rem_col2 = st.columns(2, vertical_alignment="bottom")
-    rem = rem_col1.selectbox("Select stock to remove:", [r["Ticker"] for r in rows])
