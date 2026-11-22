@@ -65,7 +65,7 @@ st.divider()
 # --- PAGE SWITCHER ---
 active_view = st.radio(
     "Navigation",
-    options=["📈 Stock Research & Forecast", "💼 My Portfolio"],
+    options=["Stock Research & Forecast", "My Portfolio"],
     horizontal=True,
     label_visibility="collapsed"
 )
@@ -73,7 +73,7 @@ active_view = st.radio(
 # ==========================================
 # VIEW 1: STOCK RESEARCH, CHART, NEWS & FORECAST
 # ==========================================
-if active_view == "📈 Stock Research & Forecast":
+if active_view == "Stock Research & Forecast":
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -200,7 +200,7 @@ if active_view == "📈 Stock Research & Forecast":
 # ==========================================
 # VIEW 2: PORTFOLIO WITH GUARANTEED TOTAL VALUE
 # ==========================================
-elif active_view == "💼 My Portfolio":
+else:
     rows = []
     total_cost = 0.0
     total_value = 0.0
@@ -235,3 +235,5 @@ elif active_view == "💼 My Portfolio":
         })
 
     total_gain = total_value - total_cost
+    total_return_pct = ((total_value - total_cost) / total_cost) * 100 if total_cost > 0 else 0.0
+
