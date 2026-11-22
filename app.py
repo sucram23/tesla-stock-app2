@@ -40,7 +40,7 @@ def render_market_cards(ticker_dict):
                     st.metric(label=name, value="N/A")
 
 # --- TOP MARKET SUMMARY BAR ---
-m_tab1, m_tab2 = st.tabs(["🇺🇸 US Markets", "🛢️ Commodities, Bonds & Crypto"])
+m_tab1, m_tab2 = st.tabs(["US Markets", "Commodities, Bonds & Crypto"])
 
 with m_tab1:
     render_market_cards({
