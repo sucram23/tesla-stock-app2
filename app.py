@@ -29,7 +29,7 @@ if st.button("Lock App"):
     st.session_state["password_correct"] = False
     st.rerun()
 
-# --- PERMANENT DEFAULT HOLDINGS (Edit these to match your permanent stocks) ---
+# --- PERMANENT DEFAULT HOLDINGS ---
 if "holdings" not in st.session_state:
     st.session_state.holdings = [
         {"Ticker": "TSLA", "Shares": 10.0, "Buy Price": 250.00},
@@ -107,7 +107,7 @@ if ticker_symbol:
     if not history_data.empty:
         close_list = history_data["Close"].tolist()
         price = float(close_list[-1])
-        first_price = float(close_list[0])
+        first_price = float(close_list[-len(close_list)])
         period_change = price - first_price
         period_pct = (period_change / first_price) * 100
 
@@ -223,7 +223,6 @@ with st.container(border=True):
     k2.metric("Total Invested Cost", f"${total_cost:,.2f}", f"{len(rows)} Holdings", delta_color="off")
     k3.metric("Total Profit / Loss", f"${total_value - total_cost:+,.2f}")
 
-# Add Stock Controls
+# Add Stock Controls (Ticker, Quantity/Shares, Buy Price, Add Stock Button)
 st.subheader("Add a New Stock")
 c1, c2, c3, c4 = st.columns(4)
-new_sym = c1.text_input("Add Ticker (e.g., NVDA)").upper().strip()
