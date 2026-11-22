@@ -5,36 +5,41 @@ import yfinance as tck
 st.set_page_config(page_title="Live Stock Price & Portfolio Tracker", layout="wide")
 st.title("Live Stock Price & Portfolio Tracker")
 
-if "portfolio_df" not in st.session_state:
-    st.session_state.portfolio_df = pd.DataFrame([
+if "holdings" not in st.session_state:
+    st.session_state.holdings = [
         {"Ticker": "TSLA", "Shares": 10.0, "Buy Price": 250.00},
         {"Ticker": "AAPL", "Shares": 5.0, "Buy Price": 180.00}
-    ])
+    ]
+
+def get_live_price(symbol, fallback=0.0):
+    try:
+        hist = tck.Ticker(symbol).history(period="5d").dropna(subset=["Close"])
+        if not hist.empty:
+            latest = float(hist["Close"].iloc[-1])
+            prev = float(hist["Close"].iloc[-2]) if len(hist) >= 2 else latest
+            return latest, prev
+    except Exception:
+        pass
+    return float(fallback), float(fallback)
 
 def render_market_cards(ticker_dict):
     cols = st.columns(len(ticker_dict))
     for col, (name, symbol) in zip(cols, ticker_dict.items()):
-        hist = tck.Ticker(symbol).history(period="5d").dropna(subset=["Close"])
+        latest, prev = get_live_price(symbol)
         with col:
             with st.container(border=True):
-                if len(hist) >= 2:
-                    latest = hist["Close"].iloc[-1]
-                    prev = hist["Close"].iloc[-2]
+                if latest > 0:
                     change = latest - prev
-                    pct_change = (change / prev) * 100
+                    pct_change = (change / prev) * 100 if prev > 0 else 0.0
                     st.metric(
                         label=f"{name} ({symbol})",
                         value=f"{latest:,.2f}",
-                        delta=f"{change:+,.2f} ({pct_change:+.2f}%)",
-                        chart_data=hist["Close"].tolist(),
-                        chart_type="line"
+                        delta=f"{change:+,.2f} ({pct_change:+.2f}%)"
                     )
-                elif len(hist) == 1:
-                    st.metric(label=f"{name} ({symbol})", value=f"{hist['Close'].iloc[-1]:,.2f}")
                 else:
                     st.metric(label=name, value="N/A")
 
-# --- YAHOO FINANCE TOP MARKET SUMMARY BAR ---
+# --- TOP MARKET SUMMARY BAR ---
 m_tab1, m_tab2 = st.tabs(["🇺🇸 US Markets", "🛢️ Commodities, Bonds & Crypto"])
 
 with m_tab1:
@@ -57,7 +62,7 @@ with m_tab2:
 
 st.divider()
 
-# --- PERSISTENT PAGE SWITCHER ---
+# --- PAGE SWITCHER ---
 active_view = st.radio(
     "Navigation",
     options=["📈 Stock Research & Forecast", "💼 My Portfolio"],
@@ -108,8 +113,8 @@ if active_view == "📈 Stock Research & Forecast":
         history_data = stock.history(period=selected_period, interval=selected_interval).dropna(subset=["Close"])
 
         if not history_data.empty:
-            price = history_data["Close"].iloc[-1]
-            first_price = history_data["Close"].iloc[0]
+            price = float(history_data["Close"].iloc[-1])
+            first_price = float(history_data["Close"].iloc[0])
             period_change = price - first_price
             period_pct = (period_change / first_price) * 100
 
@@ -127,13 +132,10 @@ if active_view == "📈 Stock Research & Forecast":
 
                 if "20-Period SMA" in selected_indicators:
                     chart_df["SMA 20"] = history_data["Close"].rolling(window=20).mean()
-
                 if "50-Period SMA" in selected_indicators:
                     chart_df["SMA 50"] = history_data["Close"].rolling(window=50).mean()
-
                 if "20-Period EMA" in selected_indicators:
                     chart_df["EMA 20"] = history_data["Close"].ewm(span=20, adjust=False).mean()
-
                 if "Bollinger Bands" in selected_indicators:
                     sma20 = history_data["Close"].rolling(window=20).mean()
                     std20 = history_data["Close"].rolling(window=20).std()
@@ -144,7 +146,6 @@ if active_view == "📈 Stock Research & Forecast":
 
             with news_col:
                 st.subheader(f"Why {ticker_symbol} Is Moving & Latest News")
-
                 info = stock.info
                 company_name = info.get("longName", ticker_symbol)
                 sector = info.get("sector", "N/A")
@@ -159,10 +160,8 @@ if active_view == "📈 Stock Research & Forecast":
                             content = item.get("content", item)
                             title = content.get("title", "Headline unavailable")
                             summary_text = content.get("summary", "")
-
                             provider = content.get("provider", {})
                             publisher = provider.get("displayName") if isinstance(provider, dict) else content.get("publisher", "Yahoo Finance")
-
                             canonical = content.get("canonicalUrl", {})
                             link = canonical.get("url") if isinstance(canonical, dict) else content.get("link", "#")
 
@@ -184,47 +183,55 @@ if active_view == "📈 Stock Research & Forecast":
 
                 if target_mean:
                     f_col1, f_col2, f_col3, f_col4 = st.columns(4)
-
                     rating_label = rec_key.replace("_", " ").upper() if isinstance(rec_key, str) else "N/A"
                     analyst_note = f"Based on {num_analysts} analysts" if num_analysts else "Analyst consensus"
                     f_col1.metric(label="Analyst Rating", value=rating_label, delta=analyst_note, delta_color="off")
-
-                    low_pct = ((target_low - price) / price) * 100
-                    f_col2.metric(label="Low Target (12M)", value=f"${target_low:,.2f}", delta=f"{low_pct:+.2f}% vs. current")
-
-                    mean_pct = ((target_mean - price) / price) * 100
-                    f_col3.metric(label="Average Target (12M)", value=f"${target_mean:,.2f}", delta=f"{mean_pct:+.2f}% vs. current")
-
-                    high_pct = ((target_high - price) / price) * 100
-                    f_col4.metric(label="High Target (12M)", value=f"${target_high:,.2f}", delta=f"{high_pct:+.2f}% vs. current")
-
-                    st.caption("Disclaimer: Wall Street analyst price targets and ratings are third-party estimates from Yahoo Finance and are for informational purposes only, not financial advice.")
+                    f_col2.metric(label="Low Target (12M)", value=f"${target_low:,.2f}", delta=f"{((target_low - price) / price) * 100:+.2f}% vs. current")
+                    f_col3.metric(label="Average Target (12M)", value=f"${target_mean:,.2f}", delta=f"{((target_mean - price) / price) * 100:+.2f}% vs. current")
+                    f_col4.metric(label="High Target (12M)", value=f"${target_high:,.2f}", delta=f"{((target_high - price) / price) * 100:+.2f}% vs. current")
                 else:
                     st.info(f"Wall Street analyst price targets are not available for {ticker_symbol}.")
 
             st.subheader(f"{ticker_symbol} - {timeframe} Price History")
             st.dataframe(history_data[["Open", "High", "Low", "Close", "Volume"]].iloc[::-1], use_container_width=True)
         else:
-            st.error(f"Could not find stock data for '{ticker_symbol}'. Double-check the ticker symbol and try again.")
+            st.error(f"Could not find stock data for '{ticker_symbol}'.")
 
 # ==========================================
-# VIEW 2: PORTFOLIO WITH TOP KEYCARD & TOTAL UNDER TABLE
+# VIEW 2: PORTFOLIO WITH GUARANTEED TOTAL VALUE
 # ==========================================
 elif active_view == "💼 My Portfolio":
-    top_keycard_slot = st.empty()
+    rows = []
+    total_cost = 0.0
+    total_value = 0.0
+    total_day_change = 0.0
+    total_shares = 0.0
 
-    st.subheader("Edit Your Holdings (Click '+' at the bottom of the table to add a row)")
-    edited_df = st.data_editor(
-        st.session_state.portfolio_df,
-        num_rows="dynamic",
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Ticker": st.column_config.TextColumn("Ticker (e.g., NVDA)", required=True),
-            "Shares": st.column_config.NumberColumn("Shares", min_value=0.01, step=1.0, required=True),
-            "Buy Price": st.column_config.NumberColumn("Buy Price ($)", min_value=0.01, format="$%.2f", required=True)
-        }
-    )
+    for item in st.session_state.holdings:
+        sym = item["Ticker"]
+        shares = float(item["Shares"])
+        buy_price = float(item["Buy Price"])
+        curr_price, prev_close = get_live_price(sym, fallback=buy_price)
 
-    st.session_state.portfolio_df = edited_df
-    valid_rows = edited_df.dropna(subset=["Ticker", "Shares", "Buy Price"]).copy()
+        cost_basis = shares * buy_price
+        market_value = shares * curr_price
+        day_change = shares * (curr_price - prev_close)
+        gain_loss = market_value - cost_basis
+        gain_pct = ((curr_price - buy_price) / buy_price) * 100 if buy_price > 0 else 0.0
+
+        total_cost += cost_basis
+        total_value += market_value
+        total_day_change += day_change
+        total_shares += shares
+
+        rows.append({
+            "Ticker": sym,
+            "Shares": shares,
+            "Buy Price ($)": round(buy_price, 2),
+            "Current Price ($)": round(curr_price, 2),
+            "Total Value ($)": round(market_value, 2),
+            "Gain / Loss ($)": round(gain_loss, 2),
+            "Return (%)": round(gain_pct, 2)
+        })
+
+    total_gain = total_value - total_cost
