@@ -5,7 +5,6 @@ import yfinance as tck
 
 st.set_page_config(page_title="Stock & Portfolio Tracker", layout="wide")
 
-# --- PASSWORD GATE ---
 def check_password():
     if st.session_state.get("password_correct", False):
         return True
@@ -34,7 +33,6 @@ if st.button("Lock App"):
     st.session_state["password_correct"] = False
     st.rerun()
 
-# --- PERMANENT DEFAULT HOLDINGS ---
 if "holdings" not in st.session_state:
     st.session_state.holdings = [
         {"Ticker": "TSLA", "Shares": 10.0, "Buy Price": 250.00},
@@ -53,7 +51,6 @@ def get_live_price(symbol, fallback=0.0):
         pass
     return float(fallback), float(fallback)
 
-# --- 1. TOP MARKET SUMMARY BAR ---
 m_tab1, m_tab2 = st.tabs(["US Markets", "Commodities, Bonds & Crypto"])
 
 with m_tab1:
@@ -86,7 +83,6 @@ with m_tab2:
 
 st.divider()
 
-# --- 2. STOCK RESEARCH, CHART, NEWS & FORECAST ---
 st.header("Stock Research & Forecast")
 
 col1, col2, col3 = st.columns(3)
@@ -194,7 +190,6 @@ if ticker_symbol:
 
 st.divider()
 
-# --- 3. MY PORTFOLIO SECTION ---
 st.header("My Portfolio")
 
 rows = []
@@ -223,7 +218,6 @@ for item in st.session_state.holdings:
         "Return (%)": round(((curr - bp) / bp) * 100, 2) if bp > 0 else 0.0
     })
 
-# Top Portfolio Keycard
 with st.container(border=True):
     st.subheader("Portfolio Summary Keycard")
     k1, k2, k3 = st.columns(3)
@@ -231,5 +225,10 @@ with st.container(border=True):
     k2.metric("Total Invested Cost", f"${total_cost:,.2f}", f"{len(rows)} Holdings", delta_color="off")
     k3.metric("Total Profit / Loss", f"${total_value - total_cost:+,.2f}")
 
-# Add Stock Controls (Stock Ticker, Quantity, Price, Button)
 st.subheader("Add a New Stock")
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    new_sym = st.text_input("Stock Ticker (e.g., NVDA)", key="add_ticker_box").upper().strip()
+with c2:
+    new_sh = st.number_input("Quantity (Shares)", min_value=0.01, value=1.0, step=1.0, key="add_shares_box")
+with c3:
