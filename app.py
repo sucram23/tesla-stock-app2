@@ -25,7 +25,7 @@ if not check_password():
     st.stop()
 
 # Top header with Lock App button
-head_col1, head_col2 = st.columns([6, 1], vertical_alignment="center")
+head_col1, head_col2 = st.columns(2)
 head_col1.title("Live Stock Price & Portfolio Tracker")
 if head_col2.button("🔒 Lock App", use_container_width=True):
     st.session_state["password_correct"] = False
@@ -226,3 +226,4 @@ with st.container(border=True):
 
 # Add Stock Controls
 st.subheader("Add a New Stock")
+c1, c2, c3, c4 = st.columns(4)
