@@ -5,11 +5,11 @@ import yfinance as tck
 st.set_page_config(page_title="Live Stock Price & Portfolio Tracker", layout="wide")
 st.title("Live Stock Price & Portfolio Tracker")
 
-if "portfolio" not in st.session_state:
-    st.session_state.portfolio = [
+if "portfolio_df" not in st.session_state:
+    st.session_state.portfolio_df = pd.DataFrame([
         {"Ticker": "TSLA", "Shares": 10.0, "Buy Price": 250.00},
         {"Ticker": "AAPL", "Shares": 5.0, "Buy Price": 180.00}
-    ]
+    ])
 
 def render_market_cards(ticker_dict):
     cols = st.columns(len(ticker_dict))
@@ -57,13 +57,18 @@ with m_tab2:
 
 st.divider()
 
-# --- MAIN NAVIGATION TABS ---
-main_tab1, main_tab2 = st.tabs(["📈 Stock Research & Forecast", "💼 My Portfolio"])
+# --- PERSISTENT PAGE SWITCHER ---
+active_view = st.radio(
+    "Navigation",
+    options=["📈 Stock Research & Forecast", "💼 My Portfolio"],
+    horizontal=True,
+    label_visibility="collapsed"
+)
 
 # ==========================================
-# TAB 1: STOCK RESEARCH, CHART, NEWS & FORECAST
+# VIEW 1: STOCK RESEARCH, CHART, NEWS & FORECAST
 # ==========================================
-with main_tab1:
+if active_view == "📈 Stock Research & Forecast":
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -104,7 +109,7 @@ with main_tab1:
 
         if not history_data.empty:
             price = history_data["Close"].iloc[-1]
-            first_price = history_data["Close"].iloc[0]
+            first_price = history_data["Close"].iloc
             period_change = price - first_price
             period_pct = (period_change / first_price) * 100
 
@@ -203,26 +208,23 @@ with main_tab1:
             st.error(f"Could not find stock data for '{ticker_symbol}'. Double-check the ticker symbol and try again.")
 
 # ==========================================
-# TAB 2: MY PORTFOLIO BUILDER & TRACKER
+# VIEW 2: INTERACTIVE SPREADSHEET PORTFOLIO
 # ==========================================
-with main_tab2:
-    st.subheader("Add a Stock to Your Portfolio")
-    with st.form("add_stock_form", clear_on_submit=True):
-        p_col1, p_col2, p_col3, p_col4 = st.columns([2, 1.5, 1.5, 1], vertical_alignment="bottom")
-        new_ticker = p_col1.text_input("Ticker Symbol (e.g., NVDA)").upper().strip()
-        new_shares = p_col2.number_input("Number of Shares", min_value=0.01, value=1.0, step=1.0)
-        new_buy_price = p_col3.number_input("Average Buy Price ($)", min_value=0.01, value=100.0, step=1.0)
-        submitted = p_col4.form_submit_button("Add Stock", use_container_width=True)
+elif active_view == "💼 My Portfolio":
+    st.subheader("Edit Your Holdings (Click '+' at the bottom of the table to add a row)")
 
-        if submitted and new_ticker:
-            st.session_state.portfolio.append({"Ticker": new_ticker, "Shares": float(new_shares), "Buy Price": float(new_buy_price)})
-            st.rerun()
+    edited_df = st.data_editor(
+        st.session_state.portfolio_df,
+        num_rows="dynamic",
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Ticker": st.column_config.TextColumn("Ticker (e.g., NVDA)", required=True),
+            "Shares": st.column_config.NumberColumn("Shares", min_value=0.01, step=1.0, required=True),
+            "Buy Price": st.column_config.NumberColumn("Buy Price ($)", min_value=0.01, format="$%.2f", required=True)
+        }
+    )
 
-    if not st.session_state.portfolio:
-        st.info("Your portfolio is empty. Use the form above to add your first stock!")
-
-    if st.session_state.portfolio:
-        portfolio_rows = []
-        total_cost = 0.0
-        total_value = 0.0
-
+    # Save edits automatically and remove incomplete blank rows
+    st.session_state.portfolio_df = edited_df
+    valid_rows = edited_df.dropna(subset=["Ticker", "Shares", "Buy Price"]).copy()
