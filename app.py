@@ -59,12 +59,9 @@ st.divider()
 st.header("Stock Research & Forecast")
 
 col1, col2, col3 = st.columns(3)
-with col1:
-    ticker_symbol = st.text_input("Enter a Stock Ticker (e.g., TSLA, AAPL, MSFT):", value="TSLA").upper().strip()
-with col2:
-    timeframe = st.selectbox("Select Date Range:", ["1 Day", "5 Days", "1 Month", "6 Months", "1 Year", "5 Years", "Max"], index=4)
-with col3:
-    selected_indicators = st.multiselect("Chart Indicators:", ["20-Period SMA", "50-Period SMA", "20-Period EMA", "Bollinger Bands"], default=["20-Period SMA"])
+ticker_symbol = col1.text_input("Enter a Stock Ticker (e.g., TSLA, AAPL, MSFT):", value="TSLA").upper().strip()
+timeframe = col2.selectbox("Select Date Range:", ["1 Day", "5 Days", "1 Month", "6 Months", "1 Year", "5 Years", "Max"], index=4)
+selected_indicators = col3.multiselect("Chart Indicators:", ["20-Period SMA", "50-Period SMA", "20-Period EMA", "Bollinger Bands"], default=["20-Period SMA"])
 
 period_map = {
     "1 Day": ("1d", "5m"),
@@ -83,7 +80,7 @@ if ticker_symbol:
 
     if not history_data.empty:
         price = float(history_data["Close"].iloc[-1])
-        first_price = float(history_data["Close"].iloc[0])
+        first_price = float(history_data["Close"].iloc)
         period_change = price - first_price
         period_pct = (period_change / first_price) * 100
 
@@ -200,7 +197,7 @@ with st.container(border=True):
     k3.metric("Total Profit / Loss", f"${total_value - total_cost:+,.2f}")
 
 # Add Stock Controls
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3, c4 = st.columns(4, vertical_alignment="bottom")
 new_sym = c1.text_input("Add Ticker (e.g., NVDA)").upper().strip()
 new_sh = c2.number_input("Shares", min_value=0.01, value=1.0)
 new_bp = c3.number_input("Buy Price ($)", min_value=0.01, value=100.0)
@@ -215,7 +212,5 @@ if rows:
     st.dataframe(df, use_container_width=True, hide_index=True)
     st.success(f"Total Estimated Portfolio Value: ${total_value:,.2f} (Invested: ${total_cost:,.2f} | Profit/Loss: ${total_value - total_cost:+,.2f})")
 
-    rem_col1, rem_col2 = st.columns(2)
-    with rem_col1:
-        rem = st.selectbox("Select stock to remove:", [r["Ticker"] for r in rows])
-    with rem_col2:
+    rem_col1, rem_col2 = st.columns(2, vertical_alignment="bottom")
+    rem = rem_col1.selectbox("Select stock to remove:", [r["Ticker"] for r in rows])
