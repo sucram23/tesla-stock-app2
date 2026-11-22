@@ -208,10 +208,9 @@ if active_view == "📈 Stock Research & Forecast":
             st.error(f"Could not find stock data for '{ticker_symbol}'. Double-check the ticker symbol and try again.")
 
 # ==========================================
-# VIEW 2: PORTFOLIO WITH TOP SUMMARY KEYCARD
+# VIEW 2: PORTFOLIO WITH TOP KEYCARD & TOTAL UNDER TABLE
 # ==========================================
 elif active_view == "💼 My Portfolio":
-    # Placeholder at the very top so the keycard renders above the editor
     top_keycard_slot = st.empty()
 
     st.subheader("Edit Your Holdings (Click '+' at the bottom of the table to add a row)")
