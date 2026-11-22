@@ -109,7 +109,7 @@ if active_view == "📈 Stock Research & Forecast":
 
         if not history_data.empty:
             price = history_data["Close"].iloc[-1]
-            first_price = history_data["Close"].iloc
+            first_price = history_data["Close"].iloc[0]
             period_change = price - first_price
             period_pct = (period_change / first_price) * 100
 
@@ -208,11 +208,13 @@ if active_view == "📈 Stock Research & Forecast":
             st.error(f"Could not find stock data for '{ticker_symbol}'. Double-check the ticker symbol and try again.")
 
 # ==========================================
-# VIEW 2: INTERACTIVE SPREADSHEET PORTFOLIO
+# VIEW 2: PORTFOLIO WITH TOP SUMMARY KEYCARD
 # ==========================================
 elif active_view == "💼 My Portfolio":
-    st.subheader("Edit Your Holdings (Click '+' at the bottom of the table to add a row)")
+    # Placeholder at the very top so the keycard renders above the editor
+    top_keycard_slot = st.empty()
 
+    st.subheader("Edit Your Holdings (Click '+' at the bottom of the table to add a row)")
     edited_df = st.data_editor(
         st.session_state.portfolio_df,
         num_rows="dynamic",
@@ -225,6 +227,5 @@ elif active_view == "💼 My Portfolio":
         }
     )
 
-    # Save edits automatically and remove incomplete blank rows
     st.session_state.portfolio_df = edited_df
     valid_rows = edited_df.dropna(subset=["Ticker", "Shares", "Buy Price"]).copy()
