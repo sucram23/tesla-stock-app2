@@ -10,10 +10,10 @@ def check_password():
     if st.session_state.get("password_correct", False):
         return True
 
-    st.title("🔒 Private Stock & Portfolio Tracker")
+    st.title("Private Stock & Portfolio Tracker")
     pwd = st.text_input("Enter Password to View App:", type="password")
 
-    if st.button("Unlock App", type="primary"):
+    if st.button("Unlock App"):
         if "APP_PASSWORD" in st.secrets and hmac.compare_digest(pwd, st.secrets["APP_PASSWORD"]):
             st.session_state["password_correct"] = True
             st.rerun()
@@ -24,13 +24,12 @@ def check_password():
 if not check_password():
     st.stop()
 
-# Top header with Lock App button
-head_col1, head_col2 = st.columns(2)
-head_col1.title("Live Stock Price & Portfolio Tracker")
-if head_col2.button("🔒 Lock App", use_container_width=True):
+st.title("Live Stock Price & Portfolio Tracker")
+if st.button("Lock App"):
     st.session_state["password_correct"] = False
     st.rerun()
 
+# --- PERMANENT DEFAULT HOLDINGS (Edit these to match your permanent stocks) ---
 if "holdings" not in st.session_state:
     st.session_state.holdings = [
         {"Ticker": "TSLA", "Shares": 10.0, "Buy Price": 250.00},
@@ -108,7 +107,7 @@ if ticker_symbol:
     if not history_data.empty:
         close_list = history_data["Close"].tolist()
         price = float(close_list[-1])
-        first_price = float(close_list[-len(close_list)])
+        first_price = float(close_list[0])
         period_change = price - first_price
         period_pct = (period_change / first_price) * 100
 
@@ -181,7 +180,7 @@ if ticker_symbol:
                 st.info(f"Wall Street analyst price targets are not available for {ticker_symbol}.")
 
         st.subheader(f"{ticker_symbol} - {timeframe} Price History")
-        st.dataframe(history_data[["Open", "High", "Low", "Close", "Volume"]].iloc[::-1], use_container_width=True)
+        st.dataframe(history_data[["Open", "High", "Low", "Close", "Volume"]].iloc[::-1])
     else:
         st.error(f"Could not find stock data for '{ticker_symbol}'.")
 
@@ -227,3 +226,4 @@ with st.container(border=True):
 # Add Stock Controls
 st.subheader("Add a New Stock")
 c1, c2, c3, c4 = st.columns(4)
+new_sym = c1.text_input("Add Ticker (e.g., NVDA)").upper().strip()
