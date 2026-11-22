@@ -3,6 +3,26 @@ import pandas as pd
 import yfinance as tck
 
 st.set_page_config(page_title="Stock & Portfolio Tracker", layout="wide")
+import hmac
+
+def check_password():
+    if st.session_state.get("password_correct", False):
+        return True
+
+    st.title("🔒 Private Stock & Portfolio Tracker")
+    pwd = st.text_input("Enter Password to View App:", type="password")
+
+    if st.button("Unlock App", type="primary"):
+        if hmac.compare_digest(pwd, st.secrets["APP_PASSWORD"]):
+            st.session_state["password_correct"] = True
+            st.rerun()
+        else:
+            st.error("Incorrect password. Please try again.")
+    return False
+
+if not check_password():
+    st.stop()
+
 st.title("Live Stock Price & Portfolio Tracker")
 
 if "holdings" not in st.session_state:
