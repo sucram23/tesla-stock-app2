@@ -14,7 +14,12 @@ def check_password():
     pwd = st.text_input("Enter Password to View App:", type="password")
 
     if st.button("Unlock App"):
-        if "APP_PASSWORD" in st.secrets and hmac.compare_digest(pwd, st.secrets["APP_PASSWORD"]):
+        try:
+            secret_pwd = st.secrets["APP_PASSWORD"]
+        except Exception:
+            secret_pwd = ""
+
+        if secret_pwd and hmac.compare_digest(pwd, secret_pwd):
             st.session_state["password_correct"] = True
             st.rerun()
         else:
@@ -85,9 +90,12 @@ st.divider()
 st.header("Stock Research & Forecast")
 
 col1, col2, col3 = st.columns(3)
-ticker_symbol = col1.text_input("Enter a Stock Ticker (e.g., TSLA, AAPL, MSFT):", value="TSLA").upper().strip()
-timeframe = col2.selectbox("Select Date Range:", ["1 Day", "5 Days", "1 Month", "6 Months", "1 Year", "5 Years", "Max"], index=4)
-selected_indicators = col3.multiselect("Chart Indicators:", ["20-Period SMA", "50-Period SMA", "20-Period EMA", "Bollinger Bands"], default=["20-Period SMA"])
+with col1:
+    ticker_symbol = st.text_input("Enter a Stock Ticker (e.g., TSLA, AAPL, MSFT):", value="TSLA").upper().strip()
+with col2:
+    timeframe = st.selectbox("Select Date Range:", ["1 Day", "5 Days", "1 Month", "6 Months", "1 Year", "5 Years", "Max"], index=4)
+with col3:
+    selected_indicators = st.multiselect("Chart Indicators:", ["20-Period SMA", "50-Period SMA", "20-Period EMA", "Bollinger Bands"], default=["20-Period SMA"])
 
 period_map = {
     "1 Day": ("1d", "5m"),
@@ -107,7 +115,7 @@ if ticker_symbol:
     if not history_data.empty:
         close_list = history_data["Close"].tolist()
         price = float(close_list[-1])
-        first_price = float(close_list[-len(close_list)])
+        first_price = float(close_list[0])
         period_change = price - first_price
         period_pct = (period_change / first_price) * 100
 
@@ -223,6 +231,5 @@ with st.container(border=True):
     k2.metric("Total Invested Cost", f"${total_cost:,.2f}", f"{len(rows)} Holdings", delta_color="off")
     k3.metric("Total Profit / Loss", f"${total_value - total_cost:+,.2f}")
 
-# Add Stock Controls (Ticker, Quantity/Shares, Buy Price, Add Stock Button)
+# Add Stock Controls (Stock Ticker, Quantity, Price, Button)
 st.subheader("Add a New Stock")
-c1, c2, c3, c4 = st.columns(4)
